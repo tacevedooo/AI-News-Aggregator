@@ -134,8 +134,10 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Local pipeline database
-data/
+# Local pipeline data (keep tracked samples under data/samples/)
+data/inbox/
+data/storage/
+data/**/*.db
 
 # Environments
 .env

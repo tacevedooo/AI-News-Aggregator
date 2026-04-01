@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class ScrapedArticle(BaseModel):
-    """Matches entries in recent_full_articles.json."""
+    """Matches entries in article JSON feeds."""
 
     name: str
     published_relative: str = ""

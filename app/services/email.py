@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 from html import escape
 from typing import Iterable
 
-from app.models import ArticleSummary
+from app.core.models import ArticleSummary
 
 
 def build_plain_body(summaries: Iterable[ArticleSummary], subject_line: str) -> str:
@@ -43,7 +43,6 @@ def build_html_body(summaries: Iterable[ArticleSummary], subject_line: str) -> s
             parts.append(f"<p><small>Source: {escape(s.source)}</small></p>")
         if s.error:
             parts.append(f"<p><strong>Error:</strong> {escape(s.error)}</p>")
-        # summary may contain markdown-ish text; keep as preformatted for safety
         parts.append(f"<pre style='white-space:pre-wrap;font-family:sans-serif'>{escape(s.summary or '')}</pre>")
     parts.append("</body></html>")
     return "\n".join(parts)
@@ -61,7 +60,6 @@ def send_digest_email(
     mail_from = os.getenv("EMAIL_FROM", user).strip()
     to_raw = os.getenv("EMAIL_TO", "").strip()
     use_tls = os.getenv("SMTP_USE_TLS", "true").lower() in ("1", "true", "yes")
-    # Gmail: 587 + STARTTLS (default), or 465 + implicit SSL (set SMTP_USE_SSL=true).
     use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() in ("1", "true", "yes")
 
     if not host or not mail_from or not to_raw:

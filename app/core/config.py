@@ -1,9 +1,12 @@
-"""Load environment variables from app/.env and optional repo-root .env."""
+"""Load environment variables from standard locations."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
+
+# Repo root: app/core/config.py -> parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _parse_env_line(line: str) -> tuple[str, str] | None:
@@ -20,10 +23,10 @@ def _parse_env_line(line: str) -> tuple[str, str] | None:
 
 def load_env() -> None:
     """Populate os.environ from .env files (does not override existing vars)."""
-    here = Path(__file__).resolve()
     candidates = [
-        here.parent / ".env",
-        here.parents[1] / ".env",
+        _REPO_ROOT / ".env",
+        _REPO_ROOT / "app" / ".env",
+        _REPO_ROOT / "config" / ".env",
     ]
     for env_path in candidates:
         if not env_path.exists():

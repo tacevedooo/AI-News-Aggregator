@@ -1,9 +1,7 @@
-"""Run the summarize → database → email pipeline."""
+"""CLI entrypoint: summarize articles → database → email digest."""
 
-from pathlib import Path
-
-from app.pipeline import main as pipeline_main
+from app.pipelines.digest import main
 
 
 if __name__ == "__main__":
-    pipeline_main()
+    main()

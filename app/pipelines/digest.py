@@ -7,11 +7,16 @@ import json
 import os
 from pathlib import Path
 
-from app.config import load_env
-from app.database import upsert_summaries
-from app.email_digest import send_digest_email
-from app.models import ScrapedArticle
-from app.summarize import summarize_article
+from app.core.config import load_env
+from app.core.models import ScrapedArticle
+from app.persistence.database import upsert_summaries
+from app.services.email import send_digest_email
+from app.services.summarization import summarize_article
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+DEFAULT_JSON = "data/inbox/recent_full_articles.json"
+DEFAULT_DB = "data/storage/summaries.db"
 
 
 def load_articles_json(path: Path) -> list[ScrapedArticle]:
@@ -56,13 +61,13 @@ def main() -> None:
     parser.add_argument(
         "json_path",
         nargs="?",
-        default="recent_full_articles.json",
-        help="Path to articles JSON (default: recent_full_articles.json)",
+        default=DEFAULT_JSON,
+        help=f"Path to articles JSON (default: {DEFAULT_JSON})",
     )
     parser.add_argument(
         "--db",
-        default="data/summaries.db",
-        help="SQLite database path (default: data/summaries.db)",
+        default=DEFAULT_DB,
+        help=f"SQLite database path (default: {DEFAULT_DB})",
     )
     parser.add_argument(
         "--no-email",
@@ -71,13 +76,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parents[1]
     json_path = Path(args.json_path)
     if not json_path.is_absolute():
-        json_path = root / json_path
+        json_path = _REPO_ROOT / json_path
     db_path = Path(args.db)
     if not db_path.is_absolute():
-        db_path = root / db_path
+        db_path = _REPO_ROOT / db_path
 
     run_pipeline(json_path, db_path, send_email=not args.no_email)
 

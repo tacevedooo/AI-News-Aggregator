@@ -4,9 +4,9 @@ Collect recent developer news articles, summarize them with an LLM, store result
 
 ## What it does
 
-1. **Scrape** — Pull recent articles (e.g. from freeCodeCamp) into `recent_full_articles.json`.
+1. **Scrape** — Pull recent articles (e.g. from freeCodeCamp) into `data/inbox/recent_full_articles.json`.
 2. **Summarize** — Read that JSON, call a configurable LLM per article, produce short digests.
-3. **Persist** — Upsert summaries into a local SQLite database (`data/summaries.db` by default).
+3. **Persist** — Upsert summaries into SQLite (`data/storage/summaries.db` by default).
 4. **Notify** — Send a multipart (plain + HTML) email with all summaries via SMTP (e.g. Gmail).
 
 ## Requirements
@@ -22,7 +22,7 @@ cd AI-News-Aggregator
 uv sync
 ```
 
-Copy environment variables into `app/.env` (or a `.env` at the repo root). Files matching `.env` are gitignored.
+Copy environment variables into `app/.env`, `config/.env`, or a `.env` at the repo root. Files named `.env` are gitignored.
 
 ## Environment variables
 
@@ -43,7 +43,7 @@ Copy environment variables into `app/.env` (or a `.env` at the repo root). Files
 - `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
 - `GEMINI_MODEL` — optional, default `gemini-1.5-flash`
 
-**Ollama (local, no API bill)**
+**Ollama (local)**
 
 - `LLM_PROVIDER=ollama`
 - `OLLAMA_BASE_URL` — optional, default `http://localhost:11434/v1`
@@ -64,25 +64,19 @@ If SMTP is not configured, the pipeline still runs and saves to the database; em
 |----------|-------------|
 | `SMTP_HOST` | e.g. `smtp.gmail.com` |
 | `SMTP_PORT` | e.g. `587` |
-| `SMTP_USER` / `SMTP_PASSWORD` | Usually Gmail **App Password**, not your normal password |
-| `EMAIL_FROM` | Sender address (often same as `SMTP_USER`) |
+| `SMTP_USER` / `SMTP_PASSWORD` | Gmail: use an **App Password** |
+| `EMAIL_FROM` | Sender (often same as `SMTP_USER`) |
 | `EMAIL_TO` | Comma-separated recipients |
 | `SMTP_USE_TLS` | `true` for port 587 (default) |
 | `SMTP_USE_SSL` | `true` for port 465 |
-| `EMAIL_SUBJECT` | Optional subject line |
-| `SKIP_EMAIL` | Set to `true` to never send |
-
-### Other
-
-| Variable | Description |
-|----------|-------------|
-| `PROXY_HTTP_URL` / `PROXY_HTTPS_URL` | Optional HTTP proxies for other tooling (e.g. transcript fetchers) |
+| `EMAIL_SUBJECT` | Optional |
+| `SKIP_EMAIL` | `true` to skip sending |
 
 ## Usage
 
-### Pipeline (summarize JSON → DB → email)
+### Pipeline (summarize → DB → email)
 
-Uses `recent_full_articles.json` in the project root by default.
+Default input: `data/inbox/recent_full_articles.json`. Copy `data/samples/example_articles.json` there if you need a quick test.
 
 ```bash
 uv run python main.py
@@ -91,22 +85,21 @@ uv run python main.py
 Or:
 
 ```bash
-uv run python -m app.pipeline
+uv run python -m app.pipelines.digest
 ```
 
 Options:
 
 ```bash
-uv run python -m app.pipeline path/to/articles.json --db data/summaries.db --no-email
+uv run python -m app.pipelines.digest path/to/articles.json --db data/storage/summaries.db --no-email
 ```
 
 ### Scrape freeCodeCamp (optional)
 
-The scraper writes `recent_full_articles.json`. It expects `requests` and `beautifulsoup4`:
+Writes `data/inbox/recent_full_articles.json`.
 
 ```bash
-uv add requests beautifulsoup4
-uv run python app/scrapers/freecodecamp.py
+uv run python -m app.scrapers.freecodecamp
 ```
 
 ## Article JSON format
@@ -126,24 +119,25 @@ Each item should look like:
 
 ## Database
 
-- Default path: `data/summaries.db` (the `data/` folder is ignored by git).
+- Default path: `data/storage/summaries.db` (ignored by git).
 - Table: `article_summaries` — keyed by `link` (upsert on re-runs).
 
 ## Project layout
 
 ```
-├── main.py                 # Entry: runs the pipeline
-├── recent_full_articles.json   # Input for the pipeline (from scraper or manual)
+├── main.py                      # CLI entry → digest pipeline
+├── config/                      # Optional: config/.env (see .gitignore)
+├── data/
+│   ├── samples/
+│   │   └── example_articles.json   # Tracked example feed
+│   ├── inbox/                   # Scraper output + pipeline input (gitignored)
+│   └── storage/                 # SQLite DB (gitignored)
 ├── app/
-│   ├── pipeline.py         # Orchestration
-│   ├── summarize.py        # LLM backends
-│   ├── database.py         # SQLite
-│   ├── email_digest.py     # SMTP digest
-│   ├── models.py           # Pydantic models
-│   ├── config.py           # .env loading
-│   └── scrapers/
-│       └── freecodecamp.py
-├── data/                   # Created at runtime (SQLite)
+│   ├── core/                    # config loader, Pydantic models
+│   ├── services/              # LLM summarization, SMTP email
+│   ├── persistence/           # SQLite
+│   ├── pipelines/             # digest workflow
+│   └── scrapers/              # freeCodeCamp scraper
 └── pyproject.toml
 ```
 

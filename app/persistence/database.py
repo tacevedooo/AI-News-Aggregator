@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 from typing import Iterable
 
-from app.models import ArticleSummary
+from app.core.models import ArticleSummary
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:

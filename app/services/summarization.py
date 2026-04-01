@@ -7,7 +7,7 @@ from typing import Optional
 
 from openai import OpenAI
 
-from app.models import ArticleSummary, ScrapedArticle
+from app.core.models import ArticleSummary, ScrapedArticle
 
 MAX_CONTENT_CHARS = 18_000
 
